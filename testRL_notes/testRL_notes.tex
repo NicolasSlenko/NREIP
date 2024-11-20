@@ -1,0 +1,249 @@
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{listings}
+\geometry{a4paper, margin=1in}
+
+\lstset{
+    breaklines=true, % Automatically break long lines
+    breakatwhitespace=false, % Allow breaks within words if necessary
+    prebreak=\mbox{\textcolor{red}{$\hookleftarrow$}}, % Add a break indicator (optional)
+    postbreak=\mbox{\textcolor{red}{$\rightarrow$}\space}, % Continue indicator (optional)
+}
+
+\title{NREIP TestRL Notes}
+\author{Rohan Pandey}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section*{Explanation of the MATLAB Script}
+
+The MATLAB script is designed to set up and train a Deep Deterministic Policy Gradient (DDPG) agent within a Simulink environment for a reinforcement learning task. Here's a breakdown of what each part of the script does:
+
+\subsection*{1. Define Observation and Action Specifications}
+
+\begin{itemize}
+    \item \texttt{obsInfo = rlNumericSpec([3, 1], LowerLimit = 0, UpperLimit = 1);}
+    \begin{itemize}
+        \item This line creates an observation specification object defining the shape and range of the observations the agent will receive. It specifies a 3-dimensional vector with values ranging from 0 to 1.
+    \end{itemize}
+    \item \texttt{actInfo = rlNumericSpec([3, 1], LowerLimit = -0.5 , UpperLimit = 0.5);}
+    \begin{itemize}
+        \item Similarly, this line creates an action specification object defining the shape and range of the actions the agent can take. It specifies a 3-dimensional vector with values ranging from -0.5 to 0.5.
+    \end{itemize}
+\end{itemize}
+
+\subsection*{2. Create the Reinforcement Learning Environment}
+
+\begin{itemize}
+    \item \texttt{env = rlSimulinkEnv("RL\_Rough\_Structure5", "RL\_Rough\_Structure5/RL Agent", obsInfo, actInfo);}
+    \begin{itemize}
+        \item This line initializes the Simulink environment for reinforcement learning. It specifies the Simulink model \texttt{RL\_Rough\_Structure5} and the block \texttt{RL Agent} within that model where the agent interfaces.
+        \item It also passes the observation and action specifications to the environment.
+    \end{itemize}
+\end{itemize}
+
+\subsection*{3. Configure the Agent Options}
+
+\begin{itemize}
+    \item \texttt{opts = rlDDPGAgentOptions("DiscountFactor", 0.6);}
+    \begin{itemize}
+        \item This line creates an options object for the DDPG agent, setting the discount factor (which determines the importance of future rewards) to 0.6.
+    \end{itemize}
+\end{itemize}
+
+\subsection*{4. Create the DDPG Agent}
+
+\begin{itemize}
+    \item \texttt{agent = rlDDPGAgent(obsInfo, actInfo, opts);}
+    \begin{itemize}
+        \item This line initializes the DDPG agent using the previously defined observation and action specifications and the agent options.
+    \end{itemize}
+\end{itemize}
+
+\subsection*{5. Set Training Options}
+
+\begin{itemize}
+    \item \texttt{opts = rlTrainingOptions("MaxEpisodes", 2000, "MaxStepsPerEpisode", 10, "ScoreAveragingWindowLength", 100, "StopTrainingCriteria", "AverageReward", "StopTrainingValue", 10000);}
+    \begin{itemize}
+        \item This line sets up the training options, including:
+        \begin{itemize}
+            \item Maximum number of episodes: 2000
+            \item Maximum steps per episode: 10
+            \item Window length for averaging the reward: 100
+            \item Criteria to stop training when the average reward reaches 10000
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\subsection*{6. Train the Agent}
+
+\begin{itemize}
+    \item \texttt{train(agent, env, opts);}
+    \begin{itemize}
+        \item This line starts the training process of the agent within the environment using the specified training options.
+    \end{itemize}
+\end{itemize}
+
+\section*{Python Implementation}
+
+Now, let's walk through the equivalent Python code using the \texttt{gym} and \texttt{stable\_baselines3} libraries.
+
+\subsection*{1. Import Necessary Libraries}
+
+\begin{lstlisting}[language=Python, breaklines=true]
+import gym
+import numpy as np
+from stable_baselines3 import DDPG
+from stable_baselines3.common.noise import NormalActionNoise
+from stable_baselines3.common.callbacks import BaseCallback
+\end{lstlisting}
+
+\subsection*{2. Define the Custom Environment}
+
+Since we don't have the Simulink environment in Python, we'll need to create a custom environment that mimics the behavior.
+
+\begin{lstlisting}[language=Python, breaklines=true]
+class CustomEnv(gym.Env):
+    def __init__(self):
+        super(CustomEnv, self).__init__()
+        # Observation space: 3-dimensional vector with values between 0 and 1
+        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(3,), dtype=np.float32)
+        # Action space: 3-dimensional vector with values between -0.5 and 0.5
+        self.action_space = gym.spaces.Box(low=-0.5, high=0.5, shape=(3,), dtype=np.float32)
+        self.state = None
+        self.current_step = 0
+        self.max_steps_per_episode = 10
+
+    def reset(self):
+        self.state = np.random.uniform(0, 1, size=(3,))
+        self.current_step = 0
+        return self.state
+
+    def step(self, action):
+        # Apply action to the environment (define your dynamics here)
+        # For demonstration, we'll just generate a random next state
+        self.state = np.random.uniform(0, 1, size=(3,))
+        # Define a reward function (customize this based on your problem)
+        reward = -np.sum(np.square(action))  # Example: Penalize large actions
+        self.current_step += 1
+        done = self.current_step >= self.max_steps_per_episode
+        info = {}
+        return self.state, reward, done, info
+\end{lstlisting}
+
+\subsection*{3. Create the Environment Instance}
+
+\begin{lstlisting}[language=Python, breaklines=true]
+env = CustomEnv()
+\end{lstlisting}
+
+\subsection*{4. Configure the Agent Options}
+
+\begin{lstlisting}[language=Python, breaklines=true]
+# Number of actions
+n_actions = env.action_space.shape[0]
+
+# Add action noise for exploration
+action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
+
+# Create the DDPG agent
+agent = DDPG(
+    "MlpPolicy",
+    env,
+    gamma=0.6,  # Discount factor equivalent to MATLAB's DiscountFactor
+    action_noise=action_noise,
+    verbose=1,
+)
+\end{lstlisting}
+
+\subsection*{5. Implement Custom Training Callback for Stopping Criteria}
+
+We need to implement a callback to stop training when the average reward reaches 10000 over a window length of 100 episodes.
+
+\begin{lstlisting}[language=Python, breaklines=true]
+class StopTrainingOnRewardThreshold(BaseCallback):
+    def __init__(self, reward_threshold, window_length, verbose=0):
+        super(StopTrainingOnRewardThreshold, self).__init__(verbose)
+        self.reward_threshold = reward_threshold
+        self.window_length = window_length
+        self.episode_rewards = []
+
+    def _on_step(self):
+        if self.locals.get('dones'):
+            # Episode finished
+            episode_reward = self.locals['infos'][0].get('episode')['r']
+            self.episode_rewards.append(episode_reward)
+            if len(self.episode_rewards) > self.window_length:
+                self.episode_rewards = self.episode_rewards[-self.window_length:]
+                average_reward = np.mean(self.episode_rewards)
+                if average_reward >= self.reward_threshold:
+                    print(f"Stopping training as average reward {average_reward} "
+                          f"over {self.window_length} episodes >= {self.reward_threshold}")
+                    return False  # Returning False stops training
+        return True
+\end{lstlisting}
+
+\subsection*{6. Train the Agent with the Training Options}
+
+\begin{lstlisting}[language=Python, breaklines=true]
+# Training options
+callback = StopTrainingOnRewardThreshold(reward_threshold=10000, window_length=100)
+
+# Train the agent
+agent.learn(total_timesteps=2000 * 10, callback=callback)  # Total timesteps equivalent to MaxEpisodes * MaxStepsPerEpisode
+\end{lstlisting}
+
+\subsection*{7. Save the Trained Agent}
+
+\begin{lstlisting}[language=Python, breaklines=true]
+agent.save("ddpg_agent")
+\end{lstlisting}
+
+\subsection*{8. Load and Test the Trained Agent}
+
+\begin{lstlisting}[language=Python, breaklines=true]
+# Load the trained agent
+agent = DDPG.load("ddpg_agent", env=env)
+
+# Test the agent
+obs = env.reset()
+for _ in range(10):
+    action, _states = agent.predict(obs, deterministic=True)
+    obs, reward, done, info = env.step(action)
+    if done:
+        obs = env.reset()
+\end{lstlisting}
+
+\subsection*{Explanation}
+
+In the Python implementation:
+
+\begin{itemize}
+    \item We create a custom environment \texttt{CustomEnv} that defines the observation and action spaces equivalent to the MATLAB specifications.
+    \item The \texttt{reset} and \texttt{step} methods are placeholders and should be implemented based on the specific dynamics of your environment. The reward function and transition dynamics need to reflect your actual problem.
+    \item We configure the DDPG agent with a discount factor (\texttt{gamma}) of 0.6, matching the MATLAB agent options.
+    \item A custom callback \texttt{StopTrainingOnRewardThreshold} is implemented to stop training when the average reward over a specified window reaches a certain threshold, similar to MATLAB's \texttt{StopTrainingCriteria} and \texttt{StopTrainingValue}.
+    \item We train the agent for a total number of timesteps calculated by multiplying \texttt{MaxEpisodes} and \texttt{MaxStepsPerEpisode} to mirror MATLAB's training duration.
+\end{itemize}
+
+\subsection*{Additional Notes}
+
+\begin{itemize}
+    \item The \texttt{stable\_baselines3} library does not natively support all the training options available in MATLAB's \texttt{rlTrainingOptions}, so custom implementations (like the callback) are necessary.
+    \item Ensure that the reward function and the environment dynamics in the \texttt{step} method accurately represent your specific use case for meaningful training results.
+    \item The action noise is added to encourage exploration during training, similar to the behavior of the DDPG algorithm in MATLAB.
+    \item Saving and loading the agent allows you to persist the trained model and reuse it without retraining.
+\end{itemize}
+
+
+\end{document}
