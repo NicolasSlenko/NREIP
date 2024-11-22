@@ -33,16 +33,18 @@ def nacaCoordinates_new(m, p, t):
     
     plt.figure(1);
     plt.plot(coords[: ,0], coords[:,1], "Color", numpy.random.rand(3));
-    #hold on;
+    #plt.hold(True); //Seems to be deprecated
     
     recentFoil = plt.plot(coords[: ,0], coords[: ,1], 'r*-');
     
     #for plotting the coordinates
-    #axis equal;
-    #grid on;
+    plt.axis('equal');
+    plt.grid(True);
    
-    #xlabel('x');
-    #ylabel('y');
+    plt.xlabel('x');
+    plt.ylabel('y');
+
+    plt.show();
 
 def generate_naca(m, p, t, num_points):
     
@@ -86,3 +88,4 @@ def generate_naca(m, p, t, num_points):
     # Combine into a single matrix
     coords = numpy.concatenate(x_coords, y_coords);
     return coords;
+
